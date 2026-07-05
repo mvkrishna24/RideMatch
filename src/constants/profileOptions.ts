@@ -7,7 +7,9 @@ export interface ChipOption {
   label: string;
 }
 
-export const COLLEGE = 'Sanskriti University';
+// MVP launch college — hardcoded on purpose. One campus until density is won.
+export const COLLEGE = 'JNTU Hyderabad';
+export const COLLEGE_SHORT = 'JNTUH';
 
 export const YEARS: ChipOption[] = [
   { value: '1st', label: '1st Year' },

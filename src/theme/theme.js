@@ -1086,7 +1086,7 @@ const components = {
     dayActive: {
       backgroundColor:   colors.accent,
     },
-    // Route endpoint chip (Kukatpally, Sanskriti)
+    // Route endpoint chip (Kukatpally, JNTUH)
     route: {
       borderRadius:      borderRadius.sm,
       paddingHorizontal: spacing.s8,
