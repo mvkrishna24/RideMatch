@@ -83,6 +83,10 @@ export function friendlyAuthError(err: unknown): string {
     case "auth/network-request-failed":
       return "No internet connection. Check your network and try again.";
 
+    case "auth/configuration-not-found":
+    case "auth/operation-not-allowed":
+      return "Sign-in is not enabled on the server yet. Founder: enable Email/Password in the Firebase console.";
+
     default:
       return "Something went wrong. Please try again.";
   }

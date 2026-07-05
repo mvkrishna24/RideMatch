@@ -12,7 +12,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { Bell, MagnifyingGlass, SlidersHorizontal } from 'phosphor-react-native';
+import { Bell, MagnifyingGlass } from 'phosphor-react-native';
 import { theme } from '../theme/theme';
 import { MatchCard, type RouteMatch } from '../components/MatchCard';
 import { ARRIVAL_SLOTS, COLLEGE_SHORT } from '../constants/profileOptions';
@@ -226,7 +226,7 @@ export default function MatchFeed() {
         <FeedHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          hasUnread
+          hasUnread={false}
           showBanner={false}
         />
         <SkeletonCard />
@@ -272,7 +272,7 @@ export default function MatchFeed() {
           <FeedHeader
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            hasUnread
+            hasUnread={false}
             showBanner={showStrongMatchBanner && !searchQuery}
           />
         }
@@ -297,9 +297,6 @@ export default function MatchFeed() {
         }
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => console.log('filter')} activeOpacity={0.85}>
-        <SlidersHorizontal size={iconSizes.lg} color={colors.textInverse} weight="bold" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -328,7 +325,6 @@ type MatchFeedStyles = {
   emptyBody: TextStyle;
   emptyButton: ViewStyle;
   emptyButtonText: TextStyle;
-  fab: ViewStyle;
 };
 
 const styles = StyleSheet.create<MatchFeedStyles>({
@@ -471,17 +467,4 @@ const styles = StyleSheet.create<MatchFeedStyles>({
     color: colors.primary,
   },
 
-  // FAB
-  fab: {
-    position: 'absolute',
-    bottom: spacing.s24,
-    right: spacing.s20,
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.accentGlow,
-  },
 });

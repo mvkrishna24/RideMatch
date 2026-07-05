@@ -18,6 +18,12 @@ function resolveBaseUrl(): string {
   if (host) {
     return `http://${host}:8080`;
   }
+  if (!__DEV__) {
+    // A release build with no EXPO_PUBLIC_API_URL cannot reach any backend.
+    console.warn(
+      'EXPO_PUBLIC_API_URL is not set — set it in eas.json before distributing builds.'
+    );
+  }
   return 'http://localhost:8080';
 }
 
