@@ -1,18 +1,53 @@
-import { StyleSheet, Text, View, type TextStyle } from 'react-native';
+import { MapPin, SealCheck } from 'phosphor-react-native';
+import { StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PrimaryButton } from '../../src/components/form/PrimaryButton';
+import { COLLEGE } from '../../src/constants/profileOptions';
+import { useOnboarding } from '../../src/context/OnboardingContext';
 import { theme } from '../../src/theme/theme';
 
-const { colors, typography, spacing } = theme;
+const { colors, typography, spacing, components } = theme;
 
 export default function ProfileScreen() {
+  const { profile, email, signOut } = useOnboarding();
+
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.body}>Complete setup to see your profile.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>Your profile</Text>
-        <Text style={styles.body}>
-          Profile and route setup arrive with account creation in the next release.
-        </Text>
+        <View style={styles.card}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{profile.fullName}</Text>
+            <SealCheck size={20} color={colors.primary} weight="fill" />
+          </View>
+          <Text style={styles.meta}>
+            {profile.year} Year • {profile.branch} • {COLLEGE}
+          </Text>
+
+          <View style={styles.routeRow}>
+            <MapPin size={16} color={colors.textSecondary} />
+            <Text style={styles.routeText}>
+              {profile.fromArea} → {profile.college}
+            </Text>
+          </View>
+          <Text style={styles.meta}>
+            Reaches {profile.arrivalSlot} • {profile.activeDays.length} days a week
+          </Text>
+
+          <Text style={styles.email}>Signed in as {email}</Text>
+        </View>
+
+        <PrimaryButton title="Sign out" variant="ghost" onPress={signOut} />
       </View>
     </SafeAreaView>
   );
@@ -22,21 +57,49 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.surface,
-  },
-  container: {
+  } as ViewStyle,
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.s24,
+  } as ViewStyle,
+  container: {
+    flex: 1,
+    padding: spacing.s20,
+    gap: spacing.s16,
+  } as ViewStyle,
+  card: {
+    ...(components.card.elevated as ViewStyle),
     gap: spacing.s8,
+  } as ViewStyle,
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s8,
+  } as ViewStyle,
+  name: {
+    ...(typography.h2 as TextStyle),
   },
-  title: {
-    ...(typography.h3 as TextStyle),
-    textAlign: 'center',
+  meta: {
+    ...(typography.body2 as TextStyle),
+    color: colors.textSecondary,
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s6,
+    marginTop: spacing.s8,
+  } as ViewStyle,
+  routeText: {
+    ...(typography.body1Medium as TextStyle),
+  },
+  email: {
+    ...(typography.labelSmall as TextStyle),
+    color: colors.textTertiary,
+    marginTop: spacing.s12,
   },
   body: {
     ...(typography.body2 as TextStyle),
     color: colors.textSecondary,
-    textAlign: 'center',
   },
 });

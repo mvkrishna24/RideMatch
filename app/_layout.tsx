@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { OnboardingProvider, useOnboarding } from '../src/context/OnboardingContext';
 import { theme } from '../src/theme/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,7 +39,9 @@ const navTheme: Theme = {
   },
 };
 
-export default function RootLayout() {
+function RootNavigator() {
+  const { status } = useOnboarding();
+
   // Keys must match the fontFamily names declared in theme.js fontFamilies.
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk: SpaceGrotesk_400Regular,
@@ -53,24 +56,39 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
+  const ready = (fontsLoaded || !!fontError) && status !== 'loading';
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!ready) {
     return null;
   }
 
   return (
+    <ThemeProvider value={navTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={status === 'complete'}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+        <Stack.Protected guard={status !== 'complete'}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
+      <StatusBar style="dark" />
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={navTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="dark" />
-      </ThemeProvider>
+      <OnboardingProvider>
+        <RootNavigator />
+      </OnboardingProvider>
     </QueryClientProvider>
   );
 }

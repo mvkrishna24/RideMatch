@@ -14,6 +14,7 @@ import {
 import { Bell, MagnifyingGlass, SlidersHorizontal } from 'phosphor-react-native';
 import { theme } from '../theme/theme';
 import { MatchCard, type RouteMatch } from '../components/MatchCard';
+import { useOnboarding } from '../context/OnboardingContext';
 
 const { colors, typography, spacing, borderRadius, shadows, components, iconSizes, copy } = theme;
 const { palette } = theme;
@@ -139,10 +140,13 @@ interface FeedHeaderProps {
 }
 
 function FeedHeader({ searchQuery, onSearchChange, hasUnread, showBanner }: FeedHeaderProps) {
+  const { profile } = useOnboarding();
+  const firstName = profile?.fullName.split(' ')[0] ?? 'there';
+
   return (
     <View style={styles.headerContainer}>
       <View style={styles.topBar}>
-        <Text style={styles.greeting}>Hi, Vamshi 👋</Text>
+        <Text style={styles.greeting}>Hi, {firstName} 👋</Text>
         <TouchableOpacity style={styles.bellWrapper} activeOpacity={0.7}>
           <Bell size={iconSizes.lg} color={colors.textPrimary} />
           {hasUnread && <View style={styles.unreadDot} />}
