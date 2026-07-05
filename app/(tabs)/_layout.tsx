@@ -1,33 +1,51 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { ChatCircleDots, House, UserCircle } from 'phosphor-react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { theme } from '../../src/theme/theme';
+
+const { colors, fontFamilies, fontSizes } = theme;
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
+        tabBarStyle: {
+          backgroundColor: colors.surfaceCard,
+          borderTopColor: colors.border,
+        },
+        tabBarLabelStyle: {
+          fontFamily: fontFamilies.bodyMedium,
+          fontSize: fontSizes.sm,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Matches',
+          tabBarIcon: ({ color, focused }) => (
+            <House size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="chats"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Chats',
+          tabBarIcon: ({ color, focused }) => (
+            <ChatCircleDots size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <UserCircle size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
     </Tabs>

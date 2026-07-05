@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "RideMatchApp",
-    "slug": "RideMatchApp",
+    "name": "RouteMate",
+    "slug": "routemate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ridematchapp",
+    "scheme": "routemate",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.routemate.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
