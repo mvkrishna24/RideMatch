@@ -58,7 +58,10 @@ public class ConnectionService {
                         : connection.getUserA();
         var commute = commuteProfileRepository.findByUserId(other.getId()).orElse(null);
         return new ConnectionResponse(
-                connection.getId(), connection.getCreatedAt(), UserSummary.of(other, commute));
+                connection.getId(),
+                connection.getCreatedAt(),
+                UserSummary.of(other, commute),
+                other.getFirebaseUid());
     }
 
     private boolean involves(Connection connection, UUID userId) {

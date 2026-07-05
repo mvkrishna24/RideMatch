@@ -45,6 +45,24 @@ export function useSendInterest() {
   });
 }
 
+export function useBlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api.post<void>(`/api/blocks/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches });
+      queryClient.invalidateQueries({ queryKey: queryKeys.connections });
+    },
+  });
+}
+
+export function useReportUser() {
+  return useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+      api.post<void>(`/api/reports/${userId}`, { reason }),
+  });
+}
+
 export function useAcceptInterest() {
   const queryClient = useQueryClient();
   return useMutation({

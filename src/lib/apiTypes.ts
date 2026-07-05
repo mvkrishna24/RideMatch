@@ -92,4 +92,6 @@ export interface ConnectionResponse {
   id: string;
   createdAt: string;
   user: UserSummary;
+  /** Partner's Firebase UID — only exposed post-connection; keys the chat room. */
+  partnerFirebaseUid: string;
 }

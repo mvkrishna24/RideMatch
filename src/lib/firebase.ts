@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, initializeAuth, type Auth } from "firebase/auth";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 
 // @ts-expect-error — available in Firebase React Native runtime
 import { getReactNativePersistence } from "firebase/auth";
@@ -45,6 +46,17 @@ try {
 }
 
 export const auth = authInstance;
+
+// Firestore (chat only). Auto-detect long polling keeps it working across
+// React Native network stacks; try/catch guards fast-refresh double init.
+let dbInstance: Firestore;
+try {
+  dbInstance = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+} catch {
+  dbInstance = getFirestore(app);
+}
+
+export const db = dbInstance;
 
 // User friendly Firebase auth errors
 export function friendlyAuthError(err: unknown): string {

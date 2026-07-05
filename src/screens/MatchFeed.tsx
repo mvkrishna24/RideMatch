@@ -155,8 +155,12 @@ function FeedHeader({ searchQuery, onSearchChange, hasUnread, showBanner }: Feed
 
 export default function MatchFeed() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { verificationStatus } = useOnboarding();
 
-  const { data: matches, isPending, isError, error, refetch, isRefetching } = useMatches(true);
+  // null = server state unknown (offline start) — let the query try.
+  const verified = verificationStatus === 'VERIFIED' || verificationStatus === null;
+  const { data: matches, isPending, isError, error, refetch, isRefetching } =
+    useMatches(verified);
   const sendInterest = useSendInterest();
   const acceptInterest = useAcceptInterest();
 
@@ -193,6 +197,28 @@ export default function MatchFeed() {
       onError: (e) => Alert.alert('Could not accept', e.message),
     });
   };
+
+  // Verification gate: pending students see or are seen by no one.
+  if (!verified) {
+    return (
+      <View style={styles.screen}>
+        <FeedHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          hasUnread={false}
+          showBanner={false}
+        />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Verification in review</Text>
+          <Text style={styles.emptyBody}>
+            We personally check every student before they can see matches — or
+            be seen. This usually takes less than 24 hours. We&apos;ll email
+            you the moment you&apos;re in.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (isPending) {
     return (

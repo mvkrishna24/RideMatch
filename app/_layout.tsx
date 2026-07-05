@@ -73,6 +73,7 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={status === 'complete'}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="chat/[connectionId]" />
         </Stack.Protected>
         <Stack.Protected guard={status !== 'complete'}>
           <Stack.Screen name="(auth)" />

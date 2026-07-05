@@ -11,4 +11,6 @@ public interface InterestRepository extends JpaRepository<Interest, UUID> {
     List<Interest> findByReceiverIdAndStatusOrderByCreatedAtDesc(UUID receiverId, InterestStatus status);
 
     List<Interest> findBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
+
+    void deleteBySenderIdAndReceiverId(UUID senderId, UUID receiverId);
 }
