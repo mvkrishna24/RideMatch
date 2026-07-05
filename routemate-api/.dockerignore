@@ -1,0 +1,7 @@
+target/
+.mvn/wrapper/*.jar
+*.md
+dev-seed.sql
+docker-compose.yml
+.gitignore
+.gitattributes

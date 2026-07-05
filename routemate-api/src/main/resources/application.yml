@@ -33,9 +33,15 @@ spring:
     activate:
       on-profile: production
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    # Railway Postgres exposes PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD.
+    # (Its DATABASE_URL is postgres://... — NOT a JDBC URL — so we build the
+    # JDBC form here. DATABASE_JDBC_URL overrides everything if ever needed.)
+    url: ${DATABASE_JDBC_URL:jdbc:postgresql://${PGHOST}:${PGPORT:5432}/${PGDATABASE}}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 10000
 
 server:
   port: ${PORT:8080}
