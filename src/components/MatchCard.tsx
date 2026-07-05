@@ -27,7 +27,8 @@ export interface RouteMatch {
   name: string;
   year: string;
   department: string;
-  photo: string;
+  /** Absent until real profile photos ship — initials avatar renders instead. */
+  photo?: string;
   isVerified: boolean;
   fromLocation: string;
   toLocation: string;
@@ -90,7 +91,19 @@ export function MatchCard({
       {/* Top row: avatar + identity */}
       <View style={styles.topRow}>
         <View style={styles.avatarWrapper}>
-          <Image source={{ uri: photo }} style={styles.avatar} />
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitials}>
+                {name
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join('')}
+              </Text>
+            </View>
+          )}
 
           {isVerified && (
             <View style={styles.verifiedBadge}>
@@ -232,6 +245,8 @@ type MatchCardStyles = {
   topRow: ViewStyle;
   avatarWrapper: ViewStyle;
   avatar: ImageStyle;
+  avatarFallback: ViewStyle;
+  avatarInitials: TextStyle;
   verifiedBadge: ViewStyle;
   identityBlock: ViewStyle;
   nameRow: ViewStyle;
@@ -299,6 +314,15 @@ const styles = StyleSheet.create<MatchCardStyles>({
     height: components.avatar.md.height,
     borderRadius: components.avatar.md.borderRadius,
     backgroundColor: colors.skeletonBase,
+  },
+  avatarFallback: {
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    ...(typography.body1SemiBold as TextStyle),
+    color: colors.primary,
   },
   verifiedBadge: {
     ...(components.verifiedBadge as ViewStyle),

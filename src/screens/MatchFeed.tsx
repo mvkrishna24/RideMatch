@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   TextInput,
+  Alert,
   Animated,
   RefreshControl,
   StyleSheet,
@@ -14,63 +15,42 @@ import {
 import { Bell, MagnifyingGlass, SlidersHorizontal } from 'phosphor-react-native';
 import { theme } from '../theme/theme';
 import { MatchCard, type RouteMatch } from '../components/MatchCard';
+import { ARRIVAL_SLOTS, COLLEGE_SHORT } from '../constants/profileOptions';
 import { useOnboarding } from '../context/OnboardingContext';
+import type { MatchResponse } from '../lib/apiTypes';
+import { useAcceptInterest, useMatches, useSendInterest } from '../lib/queries';
 
 const { colors, typography, spacing, borderRadius, shadows, components, iconSizes, copy } = theme;
 const { palette } = theme;
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
+// ── API → card model ───────────────────────────────────────────────────────
 
-const MOCK_MATCHES: RouteMatch[] = [
-  {
-    id: '1',
-    name: 'Arjun Sharma',
-    year: '3rd Year',
-    department: 'CSE',
-    photo: 'https://i.pravatar.cc/150?img=12',
-    isVerified: true,
-    fromLocation: 'Kukatpally',
-    toLocation: 'JNTUH',
-    departureTime: '8:30 AM',
-    activeDays: ['M', 'T', 'W', 'Th', 'F'],
-    matchPercentage: 94,
-    vehicle: 'bike',
-    gender: 'male',
-    connectionState: 'default',
-  },
-  {
-    id: '2',
-    name: 'Meera Patel',
-    year: '2nd Year',
-    department: 'ECE',
-    photo: 'https://i.pravatar.cc/150?img=47',
-    isVerified: true,
-    fromLocation: 'Miyapur',
-    toLocation: 'JNTUH',
-    departureTime: '8:45 AM',
-    activeDays: ['M', 'W', 'F'],
-    matchPercentage: 87,
-    vehicle: 'scooty',
-    gender: 'female',
-    connectionState: 'interest_received',
-  },
-  {
-    id: '3',
-    name: 'Ravi Kumar',
-    year: '4th Year',
-    department: 'MECH',
-    photo: 'https://i.pravatar.cc/150?img=33',
-    isVerified: false,
-    fromLocation: 'Gachibowli',
-    toLocation: 'JNTUH',
-    departureTime: '9:00 AM',
-    activeDays: ['M', 'T', 'W', 'Th', 'F', 'S'],
-    matchPercentage: 78,
-    vehicle: null,
-    gender: 'male',
-    connectionState: 'default',
-  },
-];
+function toCardModel(m: MatchResponse): RouteMatch {
+  const slotLabel =
+    ARRIVAL_SLOTS.find((s) => s.value === m.morningTime)?.label ?? m.morningTime;
+  return {
+    id: m.userId,
+    name: m.name ?? 'Verified student',
+    year: m.year ? `${m.year} Year` : '',
+    department: m.branch ?? '',
+    isVerified: true, // the backend only ever returns VERIFIED students
+    fromLocation: m.fromArea,
+    toLocation: COLLEGE_SHORT,
+    departureTime: slotLabel,
+    activeDays: m.activeDays ? m.activeDays.split(',') : [],
+    matchPercentage: m.matchScore,
+    vehicle:
+      m.vehicleType === 'NONE'
+        ? null
+        : (m.vehicleType.toLowerCase() as RouteMatch['vehicle']),
+    gender: (m.gender?.toLowerCase() ?? 'neutral') as RouteMatch['gender'],
+    connectionState: m.incomingInterestId
+      ? 'interest_received'
+      : m.outgoingInterestStatus === 'PENDING'
+        ? 'pending'
+        : 'default',
+  };
+}
 
 // ── Skeleton Card ──────────────────────────────────────────────────────────
 
@@ -173,39 +153,48 @@ function FeedHeader({ searchQuery, onSearchChange, hasUnread, showBanner }: Feed
 
 // ── Main Screen ────────────────────────────────────────────────────────────
 
-interface MatchFeedProps {
-  onRefresh?: () => Promise<void>;
-}
-
-export default function MatchFeed({ onRefresh }: MatchFeedProps) {
-  const [loading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+export default function MatchFeed() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const topMatchPercent = MOCK_MATCHES.length > 0 ? MOCK_MATCHES[0].matchPercentage : 0;
+  const { data: matches, isPending, isError, error, refetch, isRefetching } = useMatches(true);
+  const sendInterest = useSendInterest();
+  const acceptInterest = useAcceptInterest();
+
+  const cards = useMemo(() => (matches ?? []).map(toCardModel), [matches]);
+  const byUserId = useMemo(
+    () => new Map((matches ?? []).map((m) => [m.userId, m])),
+    [matches]
+  );
+
+  const topMatchPercent = cards.reduce((max, c) => Math.max(max, c.matchPercentage), 0);
   const showStrongMatchBanner = topMatchPercent > 90;
 
   const filteredMatches = searchQuery.trim()
-    ? MOCK_MATCHES.filter(
+    ? cards.filter(
         (m) =>
           m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           m.fromLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
           m.toLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
           m.department.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : MOCK_MATCHES;
+    : cards;
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await onRefresh?.();
-      await new Promise<void>((r) => setTimeout(r, 1200));
-    } finally {
-      setRefreshing(false);
-    }
-  }, [onRefresh]);
+  const handleSendInterest = (userId: string) => {
+    if (sendInterest.isPending) return;
+    sendInterest.mutate(userId, {
+      onError: (e) => Alert.alert('Could not send interest', e.message),
+    });
+  };
 
-  if (loading) {
+  const handleAccept = (userId: string) => {
+    const match = byUserId.get(userId);
+    if (!match?.incomingInterestId || acceptInterest.isPending) return;
+    acceptInterest.mutate(match.incomingInterestId, {
+      onError: (e) => Alert.alert('Could not accept', e.message),
+    });
+  };
+
+  if (isPending) {
     return (
       <View style={styles.screen}>
         <FeedHeader
@@ -217,6 +206,31 @@ export default function MatchFeed({ onRefresh }: MatchFeedProps) {
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.screen}>
+        <FeedHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          hasUnread={false}
+          showBanner={false}
+        />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>
+            {error instanceof Error ? error.message : copy.errorServer}
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => refetch()}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.emptyButtonText}>{copy.tryAgain}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -239,20 +253,18 @@ export default function MatchFeed({ onRefresh }: MatchFeedProps) {
         renderItem={({ item }) => (
           <MatchCard
             match={item}
-            onPress={() => console.log('view profile', item.id)}
-            onSendInterest={() => console.log('send interest', item.id)}
-            onAccept={() => console.log('accept', item.id)}
-            onDecline={() => console.log('decline', item.id)}
-            onOpenChat={() => console.log('open chat', item.id)}
+            onPress={() => {}}
+            onSendInterest={() => handleSendInterest(item.id)}
+            onAccept={() => handleAccept(item.id)}
+            onDecline={() => {}}
+            onOpenChat={() => {}}
           />
         )}
-        ListEmptyComponent={
-          <EmptyState onReviewRoute={() => console.log('review route')} />
-        }
+        ListEmptyComponent={<EmptyState onReviewRoute={() => refetch()} />}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
+            refreshing={isRefetching}
+            onRefresh={() => refetch()}
             tintColor={colors.accent}
             colors={[colors.accent]}
           />

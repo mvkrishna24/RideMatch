@@ -51,3 +51,45 @@ export interface CommuteRequest {
   genderPreference: ApiGenderPreference;
   emergencyContact: string;
 }
+
+export type ApiInterestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
+
+export interface MatchResponse {
+  userId: string;
+  name: string | null;
+  branch: string | null;
+  year: string | null;
+  gender: ApiGender | null;
+  fromArea: string;
+  vehicleType: ApiVehicleType;
+  morningTime: string;
+  activeDays: string | null;
+  matchScore: number;
+  outgoingInterestStatus: ApiInterestStatus | 'NONE';
+  incomingInterestId: string | null;
+}
+
+export interface UserSummary {
+  userId: string;
+  name: string | null;
+  branch: string | null;
+  year: string | null;
+  gender: ApiGender | null;
+  fromArea: string | null;
+  vehicleType: ApiVehicleType | null;
+  morningTime: string | null;
+  activeDays: string | null;
+}
+
+export interface InterestResponse {
+  id: string;
+  status: ApiInterestStatus;
+  createdAt: string;
+  sender: UserSummary;
+}
+
+export interface ConnectionResponse {
+  id: string;
+  createdAt: string;
+  user: UserSummary;
+}

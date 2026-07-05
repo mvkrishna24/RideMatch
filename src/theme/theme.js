@@ -1561,8 +1561,8 @@ const microInteractions = {
 
 const copy = {
   // Empty states — always include a primary action
-  emptyHome:       "Your first match is on the way",
-  emptyHomeBody:   "We're looking for people on your route. This usually takes 24–48 hours.",
+  emptyHome:       "No RouteMatches yet",
+  emptyHomeBody:   "More students are joining your route.",
   emptyMessages:   "Match with someone to start chatting",
   emptyRides:      "No active rides yet",
   emptyRidesBody:  "Send a ride interest to someone on your route and you'll appear here.",
