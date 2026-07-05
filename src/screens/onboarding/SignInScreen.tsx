@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { TextField } from '../../components/form/TextField';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { friendlyAuthError } from '../../lib/firebase';
 import { theme } from '../../theme/theme';
 
 const { colors, typography, spacing } = theme;
@@ -21,23 +22,26 @@ const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { signIn, profile } = useOnboarding();
+  const { signIn } = useOnboarding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const emailValid = EMAIL_RE.test(email.trim());
   const canContinue = emailValid && password.length >= 6 && !submitting;
 
   const handleContinue = async () => {
     setSubmitting(true);
+    setFormError(null);
     try {
-      await signIn(email.trim().toLowerCase());
-      // With a completed profile the root guard flips straight to the tabs;
-      // otherwise the user still needs the profile setup path.
-      if (!profile) {
+      const standing = await signIn(email.trim().toLowerCase(), password);
+      // 'complete' → the root guard flips straight to the tabs on its own.
+      if (standing === 'needsProfile') {
         router.replace('/verification-pending');
       }
+    } catch (err) {
+      setFormError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }
@@ -73,6 +77,8 @@ export default function SignInScreen() {
             secureTextEntry
             autoCapitalize="none"
           />
+
+          {!!formError && <Text style={styles.formError}>{formError}</Text>}
 
           <PrimaryButton
             title="Continue"
@@ -111,5 +117,10 @@ const styles = StyleSheet.create({
     ...(typography.body2 as TextStyle),
     color: colors.textSecondary,
     marginBottom: spacing.s24,
+  },
+  formError: {
+    ...(typography.body2 as TextStyle),
+    color: colors.error,
+    marginBottom: spacing.s12,
   },
 });

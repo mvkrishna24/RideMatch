@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { TextField } from '../../components/form/TextField';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { friendlyAuthError } from '../../lib/firebase';
 import { theme } from '../../theme/theme';
 
 const { colors, typography, spacing } = theme;
@@ -25,6 +26,7 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const emailValid = EMAIL_RE.test(email.trim());
   const passwordValid = password.length >= 6;
@@ -32,9 +34,12 @@ export default function SignUpScreen() {
 
   const handleContinue = async () => {
     setSubmitting(true);
+    setFormError(null);
     try {
-      await signUp(email.trim().toLowerCase());
+      await signUp(email.trim().toLowerCase(), password);
       router.replace('/verification-pending');
+    } catch (err) {
+      setFormError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }
@@ -79,6 +84,8 @@ export default function SignUpScreen() {
             }
           />
 
+          {!!formError && <Text style={styles.formError}>{formError}</Text>}
+
           <PrimaryButton
             title="Continue"
             onPress={handleContinue}
@@ -116,5 +123,10 @@ const styles = StyleSheet.create({
     ...(typography.body2 as TextStyle),
     color: colors.textSecondary,
     marginBottom: spacing.s24,
+  },
+  formError: {
+    ...(typography.body2 as TextStyle),
+    color: colors.error,
+    marginBottom: spacing.s12,
   },
 });

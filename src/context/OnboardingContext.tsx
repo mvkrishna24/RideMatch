@@ -1,4 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
 import React, {
   createContext,
   useCallback,
@@ -8,8 +14,10 @@ import React, {
   useState,
 } from 'react';
 
-// Phase 2A: local mock auth + profile state. Phase 2B swaps the storage layer
-// for Firebase Auth + backend without changing this context's public API.
+import { assertFirebaseConfigured, auth } from '../lib/firebase';
+
+// Firebase owns account identity (Phase 2B). The commute profile still lives
+// in AsyncStorage, keyed per Firebase UID, until the backend arrives.
 
 export type Gender = 'female' | 'male' | 'other';
 export type Vehicle = 'bike' | 'scooty' | 'car' | 'none';
@@ -37,92 +45,92 @@ interface OnboardingContextValue {
   status: OnboardingStatus;
   email: string | null;
   profile: CommuteProfile | null;
-  signUp: (email: string) => Promise<void>;
-  signIn: (email: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  /** Resolves to where the signed-in account stands, so screens can route. */
+  signIn: (email: string, password: string) => Promise<'complete' | 'needsProfile'>;
   completeProfile: (profile: CommuteProfile) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'routemate/onboarding/v1';
+const LEGACY_STORAGE_KEY = 'routemate/onboarding/v1';
+const profileKey = (uid: string) => `routemate/profile/v1/${uid}`;
 
-interface StoredState {
-  email: string | null;
-  profile: CommuteProfile | null;
+async function loadStoredProfile(uid: string): Promise<CommuteProfile | null> {
+  try {
+    const raw = await AsyncStorage.getItem(profileKey(uid));
+    return raw ? (JSON.parse(raw) as CommuteProfile) : null;
+  } catch {
+    return null;
+  }
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
+  const [uid, setUid] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<CommuteProfile | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw && !cancelled) {
-          const stored = JSON.parse(raw) as StoredState;
-          setEmail(stored.email ?? null);
-          setProfile(stored.profile ?? null);
-        }
-      } catch {
-        // Corrupt or unreadable storage → start fresh rather than crash.
-      } finally {
-        if (!cancelled) setHydrated(true);
+    // Pre-Firebase mock state is dead weight now; clear it once.
+    AsyncStorage.removeItem(LEGACY_STORAGE_KEY).catch(() => {});
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const stored = await loadStoredProfile(user.uid);
+        setUid(user.uid);
+        setEmail(user.email);
+        setProfile(stored);
+      } else {
+        setUid(null);
+        setEmail(null);
+        setProfile(null);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      setHydrated(true);
+    });
+    return unsubscribe;
   }, []);
 
-  const persist = useCallback(async (next: StoredState) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // Persistence is best-effort in mock mode.
-    }
+  const signUp = useCallback(async (nextEmail: string, password: string) => {
+    assertFirebaseConfigured();
+    await createUserWithEmailAndPassword(auth, nextEmail, password);
+    // onAuthStateChanged updates state; a fresh account has no profile yet.
   }, []);
-
-  const signUp = useCallback(
-    async (nextEmail: string) => {
-      setEmail(nextEmail);
-      await persist({ email: nextEmail, profile: null });
-    },
-    [persist]
-  );
 
   const signIn = useCallback(
-    async (nextEmail: string) => {
-      setEmail(nextEmail);
-      await persist({ email: nextEmail, profile });
+    async (nextEmail: string, password: string): Promise<'complete' | 'needsProfile'> => {
+      assertFirebaseConfigured();
+      const cred = await signInWithEmailAndPassword(auth, nextEmail, password);
+      const stored = await loadStoredProfile(cred.user.uid);
+      return stored ? 'complete' : 'needsProfile';
     },
-    [persist, profile]
+    []
   );
 
   const completeProfile = useCallback(
     async (nextProfile: CommuteProfile) => {
+      if (!uid) {
+        throw new Error('Cannot save a profile without a signed-in account.');
+      }
       setProfile(nextProfile);
-      await persist({ email, profile: nextProfile });
+      try {
+        await AsyncStorage.setItem(profileKey(uid), JSON.stringify(nextProfile));
+      } catch {
+        // Best-effort until the backend owns profiles.
+      }
     },
-    [persist, email]
+    [uid]
   );
 
   const signOut = useCallback(async () => {
-    setEmail(null);
-    setProfile(null);
-    try {
-      await AsyncStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Best-effort.
-    }
+    // The per-UID profile stays stored so signing back in restores it.
+    await firebaseSignOut(auth);
   }, []);
 
   const status: OnboardingStatus = !hydrated
     ? 'loading'
-    : email === null
+    : uid === null
       ? 'signedOut'
       : profile === null
         ? 'needsProfile'
