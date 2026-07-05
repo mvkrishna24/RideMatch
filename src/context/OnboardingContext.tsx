@@ -14,10 +14,18 @@ import React, {
   useState,
 } from 'react';
 
+import { api } from '../lib/api';
+import type { ApiVerificationStatus, UserResponse } from '../lib/apiTypes';
 import { assertFirebaseConfigured, auth } from '../lib/firebase';
+import {
+  fromUserResponse,
+  toCommuteRequest,
+  toUpdateMeRequest,
+} from '../lib/profileMapper';
 
-// Firebase owns account identity (Phase 2B). The commute profile still lives
-// in AsyncStorage, keyed per Firebase UID, until the backend arrives.
+// Phase 3A: Firebase owns identity, PostgreSQL owns the profile.
+// AsyncStorage keeps only a read cache so a cold start without network
+// still opens the app; the backend remains the source of truth.
 
 export type Gender = 'female' | 'male' | 'other';
 export type Vehicle = 'bike' | 'scooty' | 'car' | 'none';
@@ -45,6 +53,7 @@ interface OnboardingContextValue {
   status: OnboardingStatus;
   email: string | null;
   profile: CommuteProfile | null;
+  verificationStatus: ApiVerificationStatus | null;
   signUp: (email: string, password: string) => Promise<void>;
   /** Resolves to where the signed-in account stands, so screens can route. */
   signIn: (email: string, password: string) => Promise<'complete' | 'needsProfile'>;
@@ -52,15 +61,27 @@ interface OnboardingContextValue {
   signOut: () => Promise<void>;
 }
 
-const LEGACY_STORAGE_KEY = 'routemate/onboarding/v1';
-const profileKey = (uid: string) => `routemate/profile/v1/${uid}`;
+const cacheKey = (uid: string) => `routemate/profile-cache/v2/${uid}`;
 
-async function loadStoredProfile(uid: string): Promise<CommuteProfile | null> {
+interface CachedState {
+  profile: CommuteProfile | null;
+  verificationStatus: ApiVerificationStatus | null;
+}
+
+async function readCache(uid: string): Promise<CachedState | null> {
   try {
-    const raw = await AsyncStorage.getItem(profileKey(uid));
-    return raw ? (JSON.parse(raw) as CommuteProfile) : null;
+    const raw = await AsyncStorage.getItem(cacheKey(uid));
+    return raw ? (JSON.parse(raw) as CachedState) : null;
   } catch {
     return null;
+  }
+}
+
+async function writeCache(uid: string, state: CachedState): Promise<void> {
+  try {
+    await AsyncStorage.setItem(cacheKey(uid), JSON.stringify(state));
+  } catch {
+    // Cache is best-effort by definition.
   }
 }
 
@@ -71,41 +92,67 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [uid, setUid] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<CommuteProfile | null>(null);
+  const [verificationStatus, setVerificationStatus] =
+    useState<ApiVerificationStatus | null>(null);
+
+  const applyUserResponse = useCallback((userUid: string, user: UserResponse) => {
+    const nextProfile = fromUserResponse(user);
+    setProfile(nextProfile);
+    setVerificationStatus(user.verificationStatus);
+    writeCache(userUid, {
+      profile: nextProfile,
+      verificationStatus: user.verificationStatus,
+    });
+  }, []);
 
   useEffect(() => {
-    // Pre-Firebase mock state is dead weight now; clear it once.
-    AsyncStorage.removeItem(LEGACY_STORAGE_KEY).catch(() => {});
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const stored = await loadStoredProfile(user.uid);
-        setUid(user.uid);
-        setEmail(user.email);
-        setProfile(stored);
-      } else {
+      if (!user) {
         setUid(null);
         setEmail(null);
         setProfile(null);
+        setVerificationStatus(null);
+        setHydrated(true);
+        return;
+      }
+
+      setUid(user.uid);
+      setEmail(user.email);
+      try {
+        const synced = await api.post<UserResponse>('/api/auth/sync');
+        applyUserResponse(user.uid, synced);
+      } catch {
+        // Offline or backend unreachable: fall back to the last known
+        // server state so the app still opens. Next sync overwrites it.
+        const cached = await readCache(user.uid);
+        setProfile(cached?.profile ?? null);
+        setVerificationStatus(cached?.verificationStatus ?? null);
       }
       setHydrated(true);
     });
     return unsubscribe;
-  }, []);
+  }, [applyUserResponse]);
 
   const signUp = useCallback(async (nextEmail: string, password: string) => {
     assertFirebaseConfigured();
     await createUserWithEmailAndPassword(auth, nextEmail, password);
-    // onAuthStateChanged updates state; a fresh account has no profile yet.
+    // onAuthStateChanged fires next and runs /api/auth/sync.
   }, []);
 
   const signIn = useCallback(
     async (nextEmail: string, password: string): Promise<'complete' | 'needsProfile'> => {
       assertFirebaseConfigured();
       const cred = await signInWithEmailAndPassword(auth, nextEmail, password);
-      const stored = await loadStoredProfile(cred.user.uid);
-      return stored ? 'complete' : 'needsProfile';
+      try {
+        const synced = await api.post<UserResponse>('/api/auth/sync');
+        applyUserResponse(cred.user.uid, synced);
+        return fromUserResponse(synced) ? 'complete' : 'needsProfile';
+      } catch {
+        const cached = await readCache(cred.user.uid);
+        return cached?.profile ? 'complete' : 'needsProfile';
+      }
     },
-    []
+    [applyUserResponse]
   );
 
   const completeProfile = useCallback(
@@ -113,18 +160,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       if (!uid) {
         throw new Error('Cannot save a profile without a signed-in account.');
       }
-      setProfile(nextProfile);
-      try {
-        await AsyncStorage.setItem(profileKey(uid), JSON.stringify(nextProfile));
-      } catch {
-        // Best-effort until the backend owns profiles.
-      }
+      await api.put<UserResponse>('/api/me', toUpdateMeRequest(nextProfile));
+      await api.put('/api/commute', toCommuteRequest(nextProfile));
+      const fresh = await api.get<UserResponse>('/api/me');
+      applyUserResponse(uid, fresh);
     },
-    [uid]
+    [uid, applyUserResponse]
   );
 
   const signOut = useCallback(async () => {
-    // The per-UID profile stays stored so signing back in restores it.
     await firebaseSignOut(auth);
   }, []);
 
@@ -137,8 +181,17 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         : 'complete';
 
   const value = useMemo(
-    () => ({ status, email, profile, signUp, signIn, completeProfile, signOut }),
-    [status, email, profile, signUp, signIn, completeProfile, signOut]
+    () => ({
+      status,
+      email,
+      profile,
+      verificationStatus,
+      signUp,
+      signIn,
+      completeProfile,
+      signOut,
+    }),
+    [status, email, profile, verificationStatus, signUp, signIn, completeProfile, signOut]
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

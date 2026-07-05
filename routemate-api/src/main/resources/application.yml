@@ -3,6 +3,10 @@ spring:
     name: routemate-api
   profiles:
     default: local
+  autoconfigure:
+    # Identity comes from Firebase tokens; the in-memory user (and its
+    # generated password log line) is auto-config noise.
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   jpa:
     hibernate:
       ddl-auto: validate
