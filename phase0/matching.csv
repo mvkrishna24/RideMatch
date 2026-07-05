@@ -1,0 +1,2 @@
+Cand#,Student A,Student B,Area A,Area B,Area score (0-40),Timing score (0-30),Vehicle fit (0-15),Days score (0-15),Gender check (PASS/FAIL),Total,Verdict
+1,Example A,Example B,Kukatpally,Kukatpally,40,30,15,15,PASS,=F2+G2+H2+I2,"=IF(K2="""","""",IF(AND(K2>=70,J2=""PASS""),""INTRODUCE"",""SKIP""))"

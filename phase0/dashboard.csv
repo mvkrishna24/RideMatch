@@ -1,0 +1,44 @@
+ROUTEMATE FOUNDER DASHBOARD,
+Last updated (edit by hand):,
+,
+== ACQUISITION ==,
+Total responses,=COUNTA(Responses!B2:B)
+"Committed (""Yes, match me"")","=COUNTIF(Responses!Q2:Q,""Yes, match me"")"
+Commit rate,"=IF(B5=0,""—"",TEXT(B6/B5,""0%""))"
+Female,"=COUNTIF(Responses!E2:E,""Female"")"
+Male,"=COUNTIF(Responses!E2:E,""Male"")"
+Female %,"=IF(B5=0,""—"",TEXT(B8/B5,""0%""))"
+Vehicle owners,"=COUNTIFS(Responses!M2:M,""<>"",Responses!M2:M,""<>No vehicle"")"
+No vehicle,"=COUNTIF(Responses!M2:M,""No vehicle"")"
+Owner willing (any kind of yes),"=COUNTIF(Responses!N2:N,""Yes"")+COUNTIF(Responses!N2:N,""Yes, if petrol is shared"")+COUNTIF(Responses!N2:N,""Only same gender"")"
+Owner hard NO,"=COUNTIF(Responses!N2:N,""No"")"
+Rider willing (any kind of yes),"=COUNTIF(Responses!O2:O,""Yes"")+COUNTIF(Responses!O2:O,""Only same gender"")"
+Same-gender demand (owners+riders),"=COUNTIF(Responses!N2:N,""Only same gender"")+COUNTIF(Responses!O2:O,""Only same gender"")"
+,
+Top 5 areas,"=IFERROR(QUERY(Responses!G2:G,""select G, count(G) where G is not null group by G order by count(G) desc limit 5 label count(G) ''""),""no data yet"")"
+,
+,
+,
+,
+,
+== TRUST CONCERNS (from form) ==,
+Safety with a stranger,"=COUNTIF(Responses!P2:P,""*Safety*"")"
+Awkwardness,"=COUNTIF(Responses!P2:P,""*Awkward*"")"
+Punctuality dependence,"=COUNTIF(Responses!P2:P,""*punctuality*"")"
+Parents' permission,"=COUNTIF(Responses!P2:P,""*parents*"")"
+Nothing really,"=COUNTIF(Responses!P2:P,""*Nothing*"")"
+,
+== MATCHING ==,
+Candidate pairs scored,=COUNTA(Matching!A2:A)
+"Pairs cleared to introduce (70+, PASS)","=COUNTIF(Matching!L2:L,""INTRODUCE"")"
+Pairs introduced,=COUNTA(Pairs!A2:A)
+First rides completed,"=COUNTIF(Pairs!F2:F,""<>"")"
+First-ride conversion,"=IF(B33=0,""—"",TEXT(B34/B33,""0%""))"
+WEEKLY ACTIVE PAIRS ★,"=COUNTIF(Pairs!I2:I,""Active"")"
+Failed / dropped pairs,"=COUNTIF(Pairs!I2:I,""Dropped"")"
+Pair survival rate,"=IF(B33=0,""—"",TEXT(B36/B33,""0%""))"
+,
+== LEARNING (fill by hand weekly) ==,
+Top rejection reasons,
+Top trust concerns heard in calls,
+Most requested features,
