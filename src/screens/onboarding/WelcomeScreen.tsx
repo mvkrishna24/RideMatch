@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
         <View style={styles.hero}>
           <Text style={styles.wordmark}>
             <Text style={styles.wordmarkRoute}>Route</Text>
-            <Text style={styles.wordmarkMate}>Mate</Text>
+            <Text style={styles.wordmarkMate}>Match</Text>
           </Text>
 
           <View style={styles.tagline}>

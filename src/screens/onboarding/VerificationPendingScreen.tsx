@@ -29,7 +29,7 @@ export default function VerificationPendingScreen() {
           <Text style={styles.title}>Verified students only</Text>
           <Text style={styles.body}>
             We verify students before showing them in matches — that&apos;s
-            what keeps RouteMate safe for everyone.
+            what keeps RouteMatch safe for everyone.
           </Text>
           <Text style={styles.body}>
             Your account ({email}) is in review. Verification usually takes

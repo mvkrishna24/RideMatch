@@ -54,7 +54,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       },
     });
   } catch {
-    throw new ApiError('Could not reach RouteMate servers. Check your connection.', 0);
+    throw new ApiError('Could not reach RouteMatch servers. Check your connection.', 0);
   }
 
   if (response.status === 401) {

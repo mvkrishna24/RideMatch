@@ -6,7 +6,7 @@ import { getAuth, initializeAuth, type Auth } from "firebase/auth";
 import { getReactNativePersistence } from "firebase/auth";
 
 // ─────────────────────────────────────────────
-// RouteMate Firebase Configuration
+// RouteMatch Firebase Configuration
 // ─────────────────────────────────────────────
 
 const firebaseConfig = {

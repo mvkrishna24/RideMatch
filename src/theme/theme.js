@@ -1,5 +1,5 @@
 /**
- * RouteMate Design System — theme.js
+ * RouteMatch Design System — theme.js
  * "Same route. Every day. Together."
  *
  * React Native design token file.
@@ -1580,12 +1580,12 @@ const copy = {
   error404:        "This page doesn't exist",
   error404CTA:     "Go back home",
   errorGhosted:    "This account no longer exists",
-  errorGhostedBody:"Looks like this ride-mate deleted their account.",
+  errorGhostedBody:"Looks like this ride match deleted their account.",
 
   // Success states — warm, not corporate
   successProfile:  "You're all set 🎉",
   successInterest: "Interest sent! We'll notify you when they respond.",
-  successMatch:    "You're connected! Start chatting with your new ride-mate.",
+  successMatch:    "You're connected! Start chatting with your new ride match.",
   successRating:   "Rating sent. Thanks for keeping the community trustworthy.",
   successEmail:    "Check your inbox",
   successEmailBody:"We sent a link to ",  // append email address
@@ -1653,6 +1653,6 @@ export default theme;
 
 
 // ─────────────────────────────────────────────────────────────────
-// END OF FILE — theme.js RouteMate Design System v1.0
+// END OF FILE — theme.js RouteMatch Design System v1.0
 // Made for JNTU
 // ─────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # routemate-api
 
-RouteMate backend — Spring Boot 3.5 modular monolith. Owns profiles, commute
+RouteMatch backend — Spring Boot 3.5 modular monolith. Owns profiles, commute
 data, matching (Phase 3), connections, and safety. Firebase owns identity.
 
 ## Run locally
