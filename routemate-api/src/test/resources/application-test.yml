@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:routemate;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        # H2 treats "year" as a reserved word; quoting all generated
+        # identifiers keeps the test schema identical to the entity model.
+        globally_quoted_identifiers: true
+    open-in-view: false
+  flyway:
+    enabled: false
