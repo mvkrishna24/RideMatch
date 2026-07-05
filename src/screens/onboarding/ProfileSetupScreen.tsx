@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, ShieldCheck } from 'phosphor-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -48,6 +49,24 @@ export default function ProfileSetupScreen() {
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Each step starts at the top, not wherever the last step was scrolled to.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
+
+  // Android hardware back steps backwards through the form before exiting.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step > 1) {
+        setStep((s) => s - 1);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [step]);
 
   // Step 1 — identity
   const [fullName, setFullName] = useState('');
@@ -144,6 +163,7 @@ export default function ProfileSetupScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

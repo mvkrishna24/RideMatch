@@ -1,15 +1,23 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { SealCheck, UsersThree } from 'phosphor-react-native';
 import React from 'react';
 import { StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { theme } from '../../theme/theme';
 
 const { colors, typography, spacing, components, iconSizes, copy } = theme;
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { status } = useOnboarding();
+
+  // A signed-up account that restarts mid-setup resumes at verification,
+  // not at the marketing screen.
+  if (status === 'needsProfile') {
+    return <Redirect href="/verification-pending" />;
+  }
 
   return (
     <SafeAreaView style={styles.safe}>

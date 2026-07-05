@@ -72,7 +72,8 @@ export function MatchCard({
     connectionState,
   } = match;
 
-  const allDays = ['M', 'T', 'W', 'T', 'F', 'S'];
+  // Day keys match profile setup and filters: 'T' = Tuesday, 'Th' = Thursday.
+  const allDays = ['M', 'T', 'W', 'Th', 'F', 'S'];
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/form/PrimaryButton';
-import { COLLEGE } from '../../src/constants/profileOptions';
+import { ARRIVAL_SLOTS, COLLEGE } from '../../src/constants/profileOptions';
 import { useOnboarding } from '../../src/context/OnboardingContext';
 import { theme } from '../../src/theme/theme';
 
@@ -21,6 +21,9 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
+
+  const arrivalLabel =
+    ARRIVAL_SLOTS.find((s) => s.value === profile.arrivalSlot)?.label ?? profile.arrivalSlot;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -41,7 +44,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={styles.meta}>
-            Reaches {profile.arrivalSlot} • {profile.activeDays.length} days a week
+            Reaches {arrivalLabel} • {profile.activeDays.length} days a week
           </Text>
 
           <Text style={styles.email}>Signed in as {email}</Text>
