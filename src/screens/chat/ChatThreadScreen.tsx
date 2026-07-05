@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../../lib/firebase';
 import {
   ensureChatRoom,
+  friendlyChatError,
   sendChatMessage,
   useChatMessages,
   type ChatMessage,
@@ -48,7 +49,7 @@ export default function ChatThreadScreen() {
 
   useEffect(() => {
     ensureChatRoom(connectionId, params.partnerUid).catch((e) =>
-      setRoomError(e instanceof Error ? e.message : 'Could not open this chat.')
+      setRoomError(friendlyChatError(e))
     );
   }, [connectionId, params.partnerUid]);
 
@@ -167,11 +168,9 @@ export default function ChatThreadScreen() {
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Text style={styles.emptyText}>
-                {roomError ?? error
-                  ? 'Chat is unavailable right now. Pull back and retry.'
-                  : loading
-                    ? 'Opening chat…'
-                    : 'Say hi and agree on a pickup point 👋'}
+                {roomError ??
+                  error ??
+                  (loading ? 'Opening chat…' : 'Say hi and agree on a pickup point 👋')}
               </Text>
             </View>
           }

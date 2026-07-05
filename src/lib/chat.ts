@@ -29,6 +29,21 @@ export interface ChatMessage {
 
 const MESSAGE_LIMIT = 100;
 
+/** Firestore errors → copy a student understands (and a founder can act on). */
+export function friendlyChatError(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? '';
+  switch (code) {
+    case 'permission-denied':
+      return 'This chat is locked. Update the app, or if this keeps happening, report it to the RouteMatch team.';
+    case 'unavailable':
+      return 'No connection — messages will load when you are back online.';
+    case 'unauthenticated':
+      return 'You are signed out. Please sign in again.';
+    default:
+      return 'Chat is unavailable right now. Try again in a moment.';
+  }
+}
+
 export async function ensureChatRoom(
   connectionId: string,
   partnerFirebaseUid: string
@@ -97,7 +112,7 @@ export function useChatMessages(connectionId: string) {
         setLoading(false);
       },
       (err) => {
-        setError(err.message);
+        setError(friendlyChatError(err));
         setLoading(false);
       }
     );

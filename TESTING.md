@@ -21,6 +21,20 @@ export GOOGLE_APPLICATION_CREDENTIALS=~/routemate-sa.json
 curl localhost:8080/health                             # {"status":"ok"}
 ```
 
+## Deploy Firestore rules (single source of truth)
+
+The repo's `firestore.rules` is the ONLY valid ruleset. Never hand-edit rules
+in the Firebase console — drift here already broke chat once (2026-07-06:
+console rules denied legitimate room creation AND allowed non-members to post
+messages). To deploy:
+
+```bash
+npm run rules:print     # prints the exact rules to copy
+```
+
+Firebase console → Firestore Database → Rules → **select all → delete →
+paste → Publish**. Full replacement every time; never merge by hand.
+
 ## Run the app
 
 ```bash
@@ -29,6 +43,31 @@ npx expo start          # phone on the SAME Wi-Fi as this machine
 
 The app auto-discovers the backend through Metro's LAN address — no IP
 configuration needed in development.
+
+If phone and laptop cannot share Wi-Fi (hostel networks, AP isolation), use a
+tunnel — `@expo/ngrok` is already a project dependency:
+
+```bash
+npx expo start --tunnel --clear
+```
+
+Note: tunnel mode changes Metro's host, so backend auto-discovery stops
+working — the app will fall back to localhost. For tunnel sessions, point the
+app at your machine explicitly before starting:
+
+```bash
+EXPO_PUBLIC_API_URL=http://<your-lan-ip>:8080 npx expo start --tunnel --clear
+```
+
+## API URL — how the app finds the backend
+
+| Situation | URL source | Action needed |
+|---|---|---|
+| Dev, same Wi-Fi | Auto-derived from Metro's LAN host | none |
+| Dev, tunnel | `EXPO_PUBLIC_API_URL` env when starting Expo | set it (above) |
+| Preview / production APK | `EXPO_PUBLIC_API_URL` in `eas.json` build profile | replace the placeholder with the deployed backend URL **before building** |
+
+Never hardcode a LAN IP in source — IPs change with the router's mood.
 
 ## Create test accounts
 
